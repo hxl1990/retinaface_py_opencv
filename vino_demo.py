@@ -6,7 +6,7 @@ import logging as log
 import numpy as np
 from openvino.inference_engine import IENetwork, IEPlugin
 from anchor import AnchorCfg, AnchorGenerator, Anchor
-
+from utils import py_cpu_nms
 
 
 device = "CPU"
@@ -31,36 +31,6 @@ log.basicConfig(format="[ %(levelname)s ] %(message)s", level=log.INFO, stream=s
 
 
 
-
-def py_cpu_nms(dets, thresh):
-    """Pure Python NMS baseline."""
-    x1 = np.array([d[0] for d in dets])
-    y1 = np.array([d[1] for d in dets])
-    x2 = np.array([d[2] for d in dets])
-    y2 = np.array([d[3] for d in dets])
-    scores = np.array([d.score for d in dets])
-
-    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-    order = scores.argsort()[::-1]
-
-    keep = []
-    while order.size > 0:
-        i = order[0]
-        keep.append(i)
-        xx1 = np.maximum(x1[i], x1[order[1:]])
-        yy1 = np.maximum(y1[i], y1[order[1:]])
-        xx2 = np.minimum(x2[i], x2[order[1:]])
-        yy2 = np.minimum(y2[i], y2[order[1:]])
-
-        w = np.maximum(0.0, xx2 - xx1 + 1)
-        h = np.maximum(0.0, yy2 - yy1 + 1)
-        inter = w * h
-        ovr = inter / (areas[i] + areas[order[1:]] - inter)
-
-        inds = np.where(ovr <= thresh)[0]
-        order = order[inds + 1]
-
-    return keep
 
 
 def main():
